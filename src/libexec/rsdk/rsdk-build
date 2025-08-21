@@ -24,6 +24,26 @@ prepare_keyrings() {
 			rm "$i"
 		done
 	fi
+
+	# Get PPA GPG keys
+	ppa_list=$(jsonnet "--tla-str" "product=${RSDK_OPTION_PRODUCT_OVERRIDE:-$PRODUCT}" "$SCRIPT_DIR/../../share/rsdk/configs/extra_ppa.libjsonnet" | jq -r '.[]')
+
+	while read -r repo; do
+		[[ -z "$repo" ]] && continue
+		IFS=':/' read -r user ppa <<< "$repo"
+		
+		fingerprint=$(curl -s "https://api.launchpad.net/1.0/~${user}?ws.op=getPPAByName&name=${ppa}" | grep -o '"signing_key_fingerprint": "[^"]*"' | cut -d'"' -f4)
+		
+		[[ -z "$fingerprint" ]] && continue
+		
+		ppa_gpg_key="$OUTPUT_DIR/ppa_key_${fingerprint}.asc"
+		curl -s "http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x${fingerprint}" > "$ppa_gpg_key"
+
+		if [[ -s "$ppa_gpg_key" ]]; then
+			gpg --dearmor "$ppa_gpg_key"
+			rm "$ppa_gpg_key"
+		fi
+	done <<< "$ppa_list"
 }
 
 generate_rootfs() {

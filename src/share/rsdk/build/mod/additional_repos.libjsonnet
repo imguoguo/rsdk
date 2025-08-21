@@ -2,6 +2,7 @@ local soc_family = import "../../configs/soc_family.libjsonnet";
 local product_soc = import "../../configs/product_soc.libjsonnet";
 local soc_specific_repo = import "../../configs/soc_specific_repo.libjsonnet";
 local product_soc_family(product) = soc_family(product_soc(product));
+local extra_ppa = import "../../configs/extra_ppa.libjsonnet";
 local vscodium = import "vscodium.libjsonnet";
 
 local radxa_url(radxa_mirror) = (
@@ -60,6 +61,19 @@ function(suite, radxa_mirror, radxa_repo_suffix, product, temp_dir, install_vsco
                     product_soc_family: product_soc_family(product),
                 }
             ]
+        ) + (if std.length(extra_ppa(product)) > 0
+        then
+            [
+                |||
+                    echo 'deb https://ppa.launchpadcontent.net/%(user)s/%(ppa)s/ubuntu %(suite)s main' >> "$1/etc/apt/sources.list.d/80-%(user)s-%(ppa)s.list"
+                ||| % {
+                    user: std.split(repo, "/")[0],
+                    ppa: std.split(repo, "/")[1],
+                    suite: suite,
+                } for repo in extra_ppa(product)
+            ]
+        else 
+            []
         ) + [
             |||
                 echo deb %(radxa_url)s%(suite)s %(suite)s main > "$1/etc/apt/sources.list.d/70-radxa.list"
