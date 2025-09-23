@@ -74,12 +74,13 @@ else
             // Network
             "avahi-daemon",
             "ca-certificates",
-            "dnsmasq",
+            "dnsmasq-base",
             "ldnsutils",
             "iproute2",
             "iptables",
             "iputils-ping",
             "samba",
+            "systemd-resolved",
             "wireless-regdb",
         ] +
 
